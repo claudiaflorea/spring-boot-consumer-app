@@ -1,0 +1,56 @@
+version: '3.7'
+
+services:
+    #service 1: definition of activemq  
+    activemq:
+        image: webcenter/activemq:latest
+        container_name: active-mq
+        hostname: activemq
+        ports:
+            - "1618:1618"
+            - "60000:60000"
+            - "31616:31616"   
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - ./data/data/activemq:/data/activemq
+            - ./data/var/log/activemq:/var/log/activemq
+        environment:
+            - ACTIVEMQ_REMOVE_DEFAULT_ACCOUNT="true"
+            - ACTIVEMQ_ADMIN_LOGIN=admin
+            - ACTIVEMQ_ADMIN_PASSWORD=admin
+            - ACTIVEMQ_CONFIG_MINMEMORY=512
+            - ACTIVEMQ_CONFIG_MAXMEMORY=2048
+            - ACTIVEMQ_ENABLED_SCHEDULER="true"
+            - ACTIVEMQ_MIN_MEMORY=512
+            - ACTIVEMQ_MAX_MEMORY=2048
+        networks:
+            - common-network
+                
+    #service 2: definition of your spring-boot app 
+    spring-boot:
+        image: consumer-app               
+        container_name: consumer-app  
+        build:
+            context: .                          
+            dockerfile: Dockerfile              
+        ports:
+            - "8001:8001"                       
+        restart: always
+        depends_on:                              
+            - activemq
+        environment:
+            SPRING_ACTIVEMQ_BROKER-URL: tcp://activemq:61616
+        networks:
+            - common-network   
+
+#Docker Networks
+networks:
+    common-network:
+        external: 
+            name: cooking-app-default
+        
+#Volumes
+volumes:
+    dbdata:
+        driver: local        
+   
